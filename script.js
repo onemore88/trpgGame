@@ -100,9 +100,33 @@ const path = (() => {
 })();
 
 const enemyTypes = [
-  { name: "Goblin", color: "#34d399", sizeMod: 0.9, speedMod: 1.1 },
-  { name: "Orc", color: "#16a34a", sizeMod: 1.1, speedMod: 0.95 },
-  { name: "Maoa", color: "#a16207", sizeMod: 1.35, speedMod: 0.85 },
+  {
+    name: "Goblin",
+    tint: "#4ade80",
+    skin: "#22c55e",
+    armor: "#0f172a",
+    sizeMod: 0.9,
+    speedMod: 1.1,
+    icon: "goblin",
+  },
+  {
+    name: "Orc",
+    tint: "#22c55e",
+    skin: "#16a34a",
+    armor: "#14532d",
+    sizeMod: 1.1,
+    speedMod: 0.95,
+    icon: "orc",
+  },
+  {
+    name: "Maoa",
+    tint: "#f97316",
+    skin: "#ea580c",
+    armor: "#7c2d12",
+    sizeMod: 1.35,
+    speedMod: 0.85,
+    icon: "maoa",
+  },
 ];
 
 function randomTier() {
@@ -181,6 +205,11 @@ function enemyPosition(progress) {
 function makeTower(x, y, tier) {
   const stats = tierStats[tier];
   const role = towerRoleForTier(tier);
+  const palette = {
+    knight: { armor: "#94a3b8", cape: "#2563eb", skin: "#f8c59b" },
+    archer: { armor: "#cbd5f5", cape: "#16a34a", skin: "#f0b989" },
+    mage: { armor: "#c7d2fe", cape: "#7c3aed", skin: "#f1c27d" },
+  }[role];
   return {
     x,
     y,
@@ -191,6 +220,7 @@ function makeTower(x, y, tier) {
     attackSpeed: stats.speed,
     cooldown: 0,
     role,
+    palette,
   };
 }
 
@@ -242,10 +272,10 @@ function updateHud() {
 
 function drawBoard() {
   ctx.clearRect(0, 0, config.width, config.height);
-  ctx.fillStyle = "#1f2937";
+  ctx.fillStyle = "#0b1220";
   ctx.fillRect(0, 0, config.width, config.height);
 
-  ctx.fillStyle = "#0b1322";
+  ctx.fillStyle = "#050b18";
   const innerSize = config.width - config.trackThickness * 2;
   ctx.fillRect(
     config.trackThickness,
@@ -254,7 +284,7 @@ function drawBoard() {
     innerSize
   );
 
-  ctx.strokeStyle = "#4b5563";
+  ctx.strokeStyle = "#1f2937";
   ctx.lineWidth = 2;
   ctx.strokeRect(
     config.trackThickness,
@@ -263,36 +293,18 @@ function drawBoard() {
     innerSize
   );
 
-  ctx.strokeStyle = "rgba(148, 163, 184, 0.6)";
+  ctx.strokeStyle = "rgba(148, 163, 184, 0.35)";
   ctx.lineWidth = 1;
   ctx.strokeRect(path.offset, path.offset, path.lengthX, path.lengthY);
 
   for (const tower of state.towers) {
     const isSelected = tower === state.selectedTower;
-    ctx.beginPath();
-    const towerRadius = 13;
-    ctx.fillStyle = isSelected ? "#fbbf24" : "#d97706";
-    ctx.arc(tower.x, tower.y, towerRadius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "#1f2937";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    ctx.fillStyle = "#111827";
-    ctx.font = "11px \"Cinzel\", sans-serif";
-    ctx.textAlign = "center";
-    if (tower.role === "knight") {
-      ctx.fillText("⚔", tower.x, tower.y + 4);
-    } else if (tower.role === "archer") {
-      ctx.fillText("🏹", tower.x, tower.y + 4);
-    } else {
-      ctx.fillText("✦", tower.x, tower.y + 4);
-    }
+    drawAlly(tower, isSelected);
   }
 
   if (state.selectedTower) {
     ctx.beginPath();
-    ctx.strokeStyle = "rgba(251, 191, 36, 0.35)";
+    ctx.strokeStyle = "rgba(59, 130, 246, 0.35)";
     ctx.lineWidth = 2;
     ctx.arc(
       state.selectedTower.x,
@@ -306,29 +318,7 @@ function drawBoard() {
 
   for (const enemy of state.enemies) {
     const pos = enemyPosition(enemy.progress);
-    ctx.beginPath();
-    ctx.fillStyle = enemy.isBoss ? "#ef4444" : enemy.type.color;
-    ctx.arc(pos.x, pos.y, enemy.size / 2, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.strokeStyle = enemy.isBoss ? "#7f1d1d" : "#1f2937";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    ctx.fillStyle = "#0f172a";
-    ctx.font = "9px \"Cinzel\", sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(enemy.isBoss ? "👹" : "🐗", pos.x, pos.y + 3);
-
-    ctx.fillStyle = "rgba(15, 23, 42, 0.8)";
-    ctx.fillRect(pos.x - 18, pos.y - enemy.size, 36, 4);
-    ctx.fillStyle = enemy.isBoss ? "#fecaca" : "#bbf7d0";
-    ctx.fillRect(
-      pos.x - 18,
-      pos.y - enemy.size,
-      (enemy.hp / enemy.maxHp) * 36,
-      4
-    );
+    drawEnemy(enemy, pos);
   }
 
   for (const projectile of state.projectiles) {
@@ -356,6 +346,123 @@ function drawBoard() {
     ctx.arc(tower.x, tower.y, tower.range, 0, Math.PI * 2);
     ctx.stroke();
   }
+}
+
+function drawAlly(tower, isSelected) {
+  const { armor, cape, skin } = tower.palette;
+  const headRadius = 6;
+  const bodyWidth = 16;
+  const bodyHeight = 22;
+  const x = tower.x;
+  const y = tower.y;
+  ctx.save();
+  ctx.translate(x, y);
+
+  if (isSelected) {
+    ctx.beginPath();
+    ctx.strokeStyle = "rgba(56, 189, 248, 0.65)";
+    ctx.lineWidth = 2;
+    ctx.roundRect(-14, -26, 28, 52, 10);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = cape;
+  ctx.beginPath();
+  ctx.moveTo(-8, 4);
+  ctx.lineTo(-16, 20);
+  ctx.lineTo(-4, 20);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = armor;
+  ctx.fillRect(-bodyWidth / 2, 2, bodyWidth, bodyHeight);
+
+  ctx.fillStyle = skin;
+  ctx.beginPath();
+  ctx.arc(0, -4, headRadius, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#0f172a";
+  ctx.fillRect(-6, 8, 12, 4);
+
+  ctx.fillStyle = "#1e293b";
+  ctx.fillRect(-10, bodyHeight / 2, 6, 10);
+  ctx.fillRect(4, bodyHeight / 2, 6, 10);
+
+  if (tower.role === "knight") {
+    ctx.strokeStyle = "#cbd5f5";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(10, 4);
+    ctx.lineTo(18, 14);
+    ctx.stroke();
+  } else if (tower.role === "archer") {
+    ctx.strokeStyle = "#f59e0b";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(14, 6, 6, -Math.PI / 2, Math.PI / 2);
+    ctx.stroke();
+  } else {
+    ctx.fillStyle = "#a5b4fc";
+    ctx.beginPath();
+    ctx.arc(14, 6, 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawEnemy(enemy, pos) {
+  const size = enemy.size;
+  const bodyWidth = size * 0.7;
+  const bodyHeight = size * 0.9;
+  const headRadius = size * 0.25;
+  ctx.save();
+  ctx.translate(pos.x, pos.y);
+
+  ctx.fillStyle = enemy.isBoss ? "#ef4444" : enemy.type.tint;
+  ctx.beginPath();
+  ctx.roundRect(-bodyWidth / 2, -bodyHeight / 2, bodyWidth, bodyHeight, 6);
+  ctx.fill();
+
+  ctx.fillStyle = enemy.isBoss ? "#fecaca" : enemy.type.skin;
+  ctx.beginPath();
+  ctx.arc(0, -bodyHeight / 2 - headRadius * 0.2, headRadius, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = enemy.type.armor;
+  ctx.fillRect(-bodyWidth / 2, 0, bodyWidth, bodyHeight * 0.45);
+
+  ctx.strokeStyle = "#0f172a";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-bodyWidth / 3, bodyHeight * 0.35);
+  ctx.lineTo(-bodyWidth / 3, bodyHeight * 0.6);
+  ctx.moveTo(bodyWidth / 3, bodyHeight * 0.35);
+  ctx.lineTo(bodyWidth / 3, bodyHeight * 0.6);
+  ctx.stroke();
+
+  if (enemy.isBoss) {
+    ctx.strokeStyle = "#fee2e2";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-bodyWidth / 2, -bodyHeight / 2);
+    ctx.lineTo(-bodyWidth, -bodyHeight);
+    ctx.moveTo(bodyWidth / 2, -bodyHeight / 2);
+    ctx.lineTo(bodyWidth, -bodyHeight);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+
+  ctx.fillStyle = "rgba(15, 23, 42, 0.8)";
+  ctx.fillRect(pos.x - 18, pos.y - size, 36, 4);
+  ctx.fillStyle = enemy.isBoss ? "#fecaca" : "#bbf7d0";
+  ctx.fillRect(
+    pos.x - 18,
+    pos.y - size,
+    (enemy.hp / enemy.maxHp) * 36,
+    4
+  );
 }
 
 function spawnEnemy() {
