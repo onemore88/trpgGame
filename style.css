@@ -75,6 +75,7 @@ body {
   background: #050b18;
   width: 100%;
   height: auto;
+  aspect-ratio: 1 / 1;
   display: block;
 }
 

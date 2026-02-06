@@ -680,13 +680,21 @@ function towerAtPosition(x, y) {
   );
 }
 
+function getPointerPosition(event) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  return {
+    x: (event.clientX - rect.left) * scaleX,
+    y: (event.clientY - rect.top) * scaleY,
+  };
+}
+
 canvas.addEventListener("mousedown", (event) => {
   if (state.gameOver || state.victory) {
     return;
   }
-  const rect = canvas.getBoundingClientRect();
-  const x = event.clientX - rect.left;
-  const y = event.clientY - rect.top;
+  const { x, y } = getPointerPosition(event);
   const tower = towerAtPosition(x, y);
   if (tower) {
     state.draggingTower = tower;
@@ -698,9 +706,7 @@ canvas.addEventListener("mousemove", (event) => {
   if (!state.draggingTower) {
     return;
   }
-  const rect = canvas.getBoundingClientRect();
-  const x = event.clientX - rect.left;
-  const y = event.clientY - rect.top;
+  const { x, y } = getPointerPosition(event);
   state.draggingTower.x = x;
   state.draggingTower.y = y;
 });
@@ -737,9 +743,7 @@ canvas.addEventListener("mouseleave", () => {
 });
 
 canvas.addEventListener("click", (event) => {
-  const rect = canvas.getBoundingClientRect();
-  const x = event.clientX - rect.left;
-  const y = event.clientY - rect.top;
+  const { x, y } = getPointerPosition(event);
   const tower = towerAtPosition(x, y);
   if (tower) {
     setSelectedTower(tower);
