@@ -5,7 +5,7 @@
 
 body {
   margin: 0;
-  background: #111827;
+  background: radial-gradient(circle at top, #1f2937 0%, #0b1120 65%);
   color: #f9fafb;
 }
 
@@ -21,10 +21,13 @@ body {
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 8px;
   align-items: center;
-  background: #1f2937;
+  background: linear-gradient(120deg, #1f2937, #111827);
   padding: 12px 16px;
   border-radius: 12px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  font-family: "Cinzel", "Noto Sans KR", serif;
+  letter-spacing: 0.2px;
 }
 
 .status {
@@ -44,15 +47,18 @@ canvas {
   border-radius: 16px;
   background: #0f172a;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+  border: 2px solid rgba(148, 163, 184, 0.35);
 }
 
 .panel {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  background: #1f2937;
+  background: linear-gradient(160deg, rgba(31, 41, 55, 0.95), rgba(15, 23, 42, 0.95));
   padding: 16px;
   border-radius: 12px;
+  border: 1px solid rgba(251, 191, 36, 0.15);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
 }
 
 button {
@@ -62,6 +68,8 @@ button {
   font-weight: 700;
   font-size: 15px;
   cursor: pointer;
+  font-family: "Cinzel", "Noto Sans KR", serif;
+  letter-spacing: 0.3px;
 }
 
 button:disabled {
@@ -70,12 +78,12 @@ button:disabled {
 }
 
 .primary {
-  background: #10b981;
-  color: #052e2b;
+  background: linear-gradient(120deg, #fbbf24, #f59e0b);
+  color: #3f2500;
 }
 
 .secondary {
-  background: #6366f1;
+  background: linear-gradient(120deg, #6366f1, #4338ca);
   color: #eef2ff;
 }
 
@@ -83,9 +91,10 @@ button:disabled {
   display: grid;
   gap: 6px;
   font-size: 14px;
-  background: #111827;
+  background: rgba(15, 23, 42, 0.85);
   padding: 12px;
   border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
 }
 
 .hint {

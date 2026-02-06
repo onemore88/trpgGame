@@ -75,6 +75,8 @@ const state = {
   gold: 100,
   enemies: [],
   towers: [],
+  projectiles: [],
+  effects: [],
   selectedTower: null,
   draggingTower: null,
   isPlacingNew: false,
@@ -97,6 +99,12 @@ const path = (() => {
   };
 })();
 
+const enemyTypes = [
+  { name: "Goblin", color: "#34d399", sizeMod: 0.9, speedMod: 1.1 },
+  { name: "Orc", color: "#16a34a", sizeMod: 1.1, speedMod: 0.95 },
+  { name: "Maoa", color: "#a16207", sizeMod: 1.35, speedMod: 0.85 },
+];
+
 function randomTier() {
   const roll = Math.random();
   let cumulative = 0;
@@ -107,6 +115,12 @@ function randomTier() {
     }
   }
   return 1;
+}
+
+function towerRoleForTier(tier) {
+  if (tier <= 4) return "knight";
+  if (tier <= 7) return "archer";
+  return "mage";
 }
 
 function getInnerBounds() {
@@ -131,16 +145,18 @@ function clampToInner(x, y) {
 function makeEnemy(stage, isBoss = false) {
   const baseHp = 12 + stage * 3;
   const baseSpeed = 80 + stage * 0.5;
+  const type = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
   const hp = isBoss ? baseHp * 40 : baseHp;
-  const speed = isBoss ? baseSpeed * 0.7 : baseSpeed;
-  const size = isBoss ? 32 : 16;
+  const speed = isBoss ? baseSpeed * 0.7 : baseSpeed * type.speedMod;
+  const size = isBoss ? 32 : 16 * type.sizeMod;
   return {
-    hp,
-    maxHp: hp,
+    hp: Math.round(hp),
+    maxHp: Math.round(hp),
     speed,
     size,
     progress: 0,
     isBoss,
+    type,
   };
 }
 
@@ -164,6 +180,7 @@ function enemyPosition(progress) {
 
 function makeTower(x, y, tier) {
   const stats = tierStats[tier];
+  const role = towerRoleForTier(tier);
   return {
     x,
     y,
@@ -173,6 +190,7 @@ function makeTower(x, y, tier) {
     baseDamage: stats.damage,
     attackSpeed: stats.speed,
     cooldown: 0,
+    role,
   };
 }
 
@@ -213,7 +231,7 @@ function updateHud() {
 
   const tower = state.selectedTower;
   infoTier.textContent = `T${tower.tier}`;
-  infoDamage.textContent = towerDamage(tower).toFixed(1);
+  infoDamage.textContent = `${towerDamage(tower).toFixed(1)} (${tower.role})`;
   infoSpeed.textContent = tower.attackSpeed.toFixed(2);
   infoRange.textContent = tower.range;
   infoLevel.textContent = tower.level;
@@ -224,10 +242,10 @@ function updateHud() {
 
 function drawBoard() {
   ctx.clearRect(0, 0, config.width, config.height);
-  ctx.fillStyle = "#1e293b";
+  ctx.fillStyle = "#1f2937";
   ctx.fillRect(0, 0, config.width, config.height);
 
-  ctx.fillStyle = "#0f172a";
+  ctx.fillStyle = "#0b1322";
   const innerSize = config.width - config.trackThickness * 2;
   ctx.fillRect(
     config.trackThickness,
@@ -236,7 +254,7 @@ function drawBoard() {
     innerSize
   );
 
-  ctx.strokeStyle = "#334155";
+  ctx.strokeStyle = "#4b5563";
   ctx.lineWidth = 2;
   ctx.strokeRect(
     config.trackThickness,
@@ -245,29 +263,36 @@ function drawBoard() {
     innerSize
   );
 
-  ctx.strokeStyle = "rgba(14, 165, 233, 0.45)";
+  ctx.strokeStyle = "rgba(148, 163, 184, 0.6)";
   ctx.lineWidth = 1;
   ctx.strokeRect(path.offset, path.offset, path.lengthX, path.lengthY);
 
   for (const tower of state.towers) {
     const isSelected = tower === state.selectedTower;
     ctx.beginPath();
-    ctx.fillStyle = isSelected ? "#38bdf8" : "#f59e0b";
-    ctx.arc(tower.x, tower.y, 12, 0, Math.PI * 2);
+    const towerRadius = 13;
+    ctx.fillStyle = isSelected ? "#fbbf24" : "#d97706";
+    ctx.arc(tower.x, tower.y, towerRadius, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = "#0f172a";
+    ctx.strokeStyle = "#1f2937";
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    ctx.fillStyle = "#0f172a";
-    ctx.font = "11px sans-serif";
+    ctx.fillStyle = "#111827";
+    ctx.font = "11px \"Cinzel\", sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(`T${tower.tier}`, tower.x, tower.y + 4);
+    if (tower.role === "knight") {
+      ctx.fillText("⚔", tower.x, tower.y + 4);
+    } else if (tower.role === "archer") {
+      ctx.fillText("🏹", tower.x, tower.y + 4);
+    } else {
+      ctx.fillText("✦", tower.x, tower.y + 4);
+    }
   }
 
   if (state.selectedTower) {
     ctx.beginPath();
-    ctx.strokeStyle = "rgba(59, 130, 246, 0.4)";
+    ctx.strokeStyle = "rgba(251, 191, 36, 0.35)";
     ctx.lineWidth = 2;
     ctx.arc(
       state.selectedTower.x,
@@ -282,19 +307,44 @@ function drawBoard() {
   for (const enemy of state.enemies) {
     const pos = enemyPosition(enemy.progress);
     ctx.beginPath();
-    ctx.fillStyle = enemy.isBoss ? "#ef4444" : "#22c55e";
+    ctx.fillStyle = enemy.isBoss ? "#ef4444" : enemy.type.color;
     ctx.arc(pos.x, pos.y, enemy.size / 2, 0, Math.PI * 2);
     ctx.fill();
 
+    ctx.strokeStyle = enemy.isBoss ? "#7f1d1d" : "#1f2937";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = "#0f172a";
+    ctx.font = "9px \"Cinzel\", sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(enemy.isBoss ? "👹" : "🐗", pos.x, pos.y + 3);
+
     ctx.fillStyle = "rgba(15, 23, 42, 0.8)";
-    ctx.fillRect(pos.x - 16, pos.y - enemy.size, 32, 4);
-    ctx.fillStyle = enemy.isBoss ? "#fca5a5" : "#bbf7d0";
+    ctx.fillRect(pos.x - 18, pos.y - enemy.size, 36, 4);
+    ctx.fillStyle = enemy.isBoss ? "#fecaca" : "#bbf7d0";
     ctx.fillRect(
-      pos.x - 16,
+      pos.x - 18,
       pos.y - enemy.size,
-      (enemy.hp / enemy.maxHp) * 32,
+      (enemy.hp / enemy.maxHp) * 36,
       4
     );
+  }
+
+  for (const projectile of state.projectiles) {
+    ctx.beginPath();
+    ctx.fillStyle = projectile.color;
+    ctx.arc(projectile.x, projectile.y, projectile.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  for (const effect of state.effects) {
+    ctx.beginPath();
+    ctx.strokeStyle = effect.color;
+    ctx.lineWidth = effect.width;
+    ctx.moveTo(effect.from.x, effect.from.y);
+    ctx.lineTo(effect.to.x, effect.to.y);
+    ctx.stroke();
   }
 
   if (state.draggingTower) {
@@ -369,6 +419,20 @@ function updateEnemies(dt) {
   }
 }
 
+function applyDamage(enemy, amount) {
+  enemy.hp -= amount;
+}
+
+function spawnEffect(from, to, color, width = 2) {
+  state.effects.push({
+    from,
+    to,
+    color,
+    width,
+    life: 0.12,
+  });
+}
+
 function updateTowers(dt) {
   for (const tower of state.towers) {
     tower.cooldown -= dt;
@@ -388,7 +452,34 @@ function updateTowers(dt) {
       }
     }
     if (target) {
-      target.hp -= towerDamage(tower);
+      const from = { x: tower.x, y: tower.y };
+      const to = enemyPosition(target.progress);
+      if (tower.role === "knight") {
+        applyDamage(target, towerDamage(tower));
+        spawnEffect(from, to, "rgba(251, 191, 36, 0.7)", 3);
+      } else if (tower.role === "archer") {
+        state.projectiles.push({
+          x: tower.x,
+          y: tower.y,
+          target,
+          speed: 420,
+          color: "#fcd34d",
+          size: 3,
+          damage: towerDamage(tower),
+        });
+      } else {
+        state.projectiles.push({
+          x: tower.x,
+          y: tower.y,
+          target,
+          speed: 320,
+          color: "#a5b4fc",
+          size: 5,
+          damage: towerDamage(tower),
+          splash: 40,
+        });
+        spawnEffect(from, to, "rgba(99, 102, 241, 0.5)", 2);
+      }
       tower.cooldown = 1 / tower.attackSpeed;
     }
   }
@@ -402,6 +493,48 @@ function updateTowers(dt) {
     }
   }
   state.enemies = survivors;
+}
+
+function updateProjectiles(dt) {
+  const remaining = [];
+  for (const projectile of state.projectiles) {
+    if (!projectile.target || projectile.target.hp <= 0) {
+      continue;
+    }
+    const targetPos = enemyPosition(projectile.target.progress);
+    const dx = targetPos.x - projectile.x;
+    const dy = targetPos.y - projectile.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist <= projectile.speed * dt || dist < 4) {
+      if (projectile.splash) {
+        for (const enemy of state.enemies) {
+          const pos = enemyPosition(enemy.progress);
+          if (Math.hypot(pos.x - targetPos.x, pos.y - targetPos.y) <= projectile.splash) {
+            applyDamage(enemy, projectile.damage * 0.6);
+          }
+        }
+        spawnEffect(
+          { x: targetPos.x - 10, y: targetPos.y - 10 },
+          { x: targetPos.x + 10, y: targetPos.y + 10 },
+          "rgba(165, 180, 252, 0.7)",
+          4
+        );
+      } else {
+        applyDamage(projectile.target, projectile.damage);
+      }
+    } else {
+      projectile.x += (dx / dist) * projectile.speed * dt;
+      projectile.y += (dy / dist) * projectile.speed * dt;
+      remaining.push(projectile);
+    }
+  }
+  state.projectiles = remaining;
+}
+
+function updateEffects(dt) {
+  state.effects = state.effects
+    .map((effect) => ({ ...effect, life: effect.life - dt }))
+    .filter((effect) => effect.life > 0);
 }
 
 function checkGameOver() {
@@ -421,6 +554,8 @@ function gameLoop(timestamp) {
   updateSpawns(dt);
   updateEnemies(dt);
   updateTowers(dt);
+  updateProjectiles(dt);
+  updateEffects(dt);
   checkGameOver();
   updateHud();
   drawBoard();
