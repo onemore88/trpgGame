@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Random Tower Defense</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Gabarito:wght@400;600;700&family=Oxanium:wght@500;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="screen">
+    <header class="hud">
+      <div class="hud-item">
+        <span class="label">Stage</span>
+        <span class="value"><span id="stage">1</span> / 100</span>
+      </div>
+      <div class="hud-item">
+        <span class="label">Phase</span>
+        <span class="value" id="phase">Prep</span>
+      </div>
+      <div class="hud-item">
+        <span class="label">Timer</span>
+        <span class="value"><span id="timer">60</span>s</span>
+      </div>
+      <div class="hud-item">
+        <span class="label">Gold</span>
+        <span class="value"><span id="gold">100</span></span>
+      </div>
+      <div class="hud-item">
+        <span class="label">Alive</span>
+        <span class="value"><span id="alive">0</span> / 100</span>
+      </div>
+      <div id="status" class="status"></div>
+    </header>
+
+    <main class="game">
+      <section class="arena">
+        <canvas id="game" width="800" height="800"></canvas>
+      </section>
+
+      <aside class="panel">
+        <div class="panel-card primary-card">
+          <div class="card-title">소환</div>
+          <button id="draw" class="cta">뽑기 (10G)</button>
+          <p class="hint">빠르게 기사/궁수/마법사를 소환하세요.</p>
+        </div>
+        <div class="panel-card">
+          <div class="card-title">선택한 아군</div>
+          <div class="tower-info">
+            <div>티어: <span id="info-tier">-</span></div>
+            <div>공격력: <span id="info-damage">-</span></div>
+            <div>공속: <span id="info-speed">-</span></div>
+            <div>사거리: <span id="info-range">-</span></div>
+            <div>레벨: <span id="info-level">-</span></div>
+          </div>
+          <button id="upgrade" class="upgrade" disabled>강화 (0G)</button>
+        </div>
+        <div class="panel-card subtle">
+          <div class="card-title">조작</div>
+          <p class="hint">
+            드래그로 배치/이동. 안쪽 영역만 배치 가능합니다.
+          </p>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
