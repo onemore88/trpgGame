@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Random Tower Defense</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <header class="hud">
+      <div><strong>Stage:</strong> <span id="stage">1</span> / 100</div>
+      <div><strong>Phase:</strong> <span id="phase">Prep</span></div>
+      <div><strong>Timer:</strong> <span id="timer">60</span>s</div>
+      <div><strong>Gold:</strong> <span id="gold">100</span></div>
+      <div><strong>Alive:</strong> <span id="alive">0</span> / 100</div>
+      <div id="status" class="status"></div>
+    </header>
+
+    <main class="main">
+      <canvas id="game" width="800" height="800"></canvas>
+      <aside class="panel">
+        <button id="draw" class="primary">뽑기 (10G)</button>
+        <div class="tower-info">
+          <h3>선택한 타워</h3>
+          <div>티어: <span id="info-tier">-</span></div>
+          <div>공격력: <span id="info-damage">-</span></div>
+          <div>공속: <span id="info-speed">-</span></div>
+          <div>사거리: <span id="info-range">-</span></div>
+          <div>레벨: <span id="info-level">-</span></div>
+        </div>
+        <button id="upgrade" class="secondary" disabled>강화 (0G)</button>
+        <p class="hint">
+          드래그로 타워 배치/이동. 내부 영역에만 배치 가능.
+        </p>
+      </aside>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
