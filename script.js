@@ -16,6 +16,7 @@ const infoDamage = document.getElementById("info-damage");
 const infoSpeed = document.getElementById("info-speed");
 const infoRange = document.getElementById("info-range");
 const infoLevel = document.getElementById("info-level");
+const unitLayer = document.getElementById("unit-layer");
 
 const config = {
   width: 800,
@@ -67,6 +68,10 @@ const tierMultiplier = {
   9: 1.4,
   10: 1.5,
 };
+
+const allySpriteUrl =
+  "https://www.fightersgeneration.com/characters4/yashiro-2k3stance.gif";
+let nextTowerId = 1;
 
 const state = {
   stage: 1,
@@ -211,6 +216,7 @@ function makeTower(x, y, tier) {
     mage: { armor: "#c7d2fe", cape: "#7c3aed", skin: "#f1c27d" },
   }[role];
   return {
+    id: nextTowerId++,
     x,
     y,
     tier,
@@ -221,6 +227,7 @@ function makeTower(x, y, tier) {
     cooldown: 0,
     role,
     palette,
+    spriteEl: null,
   };
 }
 
@@ -638,6 +645,33 @@ function updateProjectiles(dt) {
   state.projectiles = remaining;
 }
 
+function syncAllySprites() {
+  const activeIds = new Set();
+  for (const tower of state.towers) {
+    activeIds.add(String(tower.id));
+    if (!tower.spriteEl) {
+      const sprite = document.createElement("img");
+      sprite.src = allySpriteUrl;
+      sprite.alt = "";
+      sprite.className = "ally-sprite";
+      sprite.dataset.towerId = String(tower.id);
+      unitLayer.appendChild(sprite);
+      tower.spriteEl = sprite;
+    }
+    const xPercent = (tower.x / canvas.width) * 100;
+    const yPercent = (tower.y / canvas.height) * 100;
+    tower.spriteEl.style.left = `${xPercent}%`;
+    tower.spriteEl.style.top = `${yPercent}%`;
+  }
+
+  const sprites = unitLayer.querySelectorAll(".ally-sprite");
+  for (const sprite of sprites) {
+    if (!activeIds.has(sprite.dataset.towerId)) {
+      sprite.remove();
+    }
+  }
+}
+
 function updateEffects(dt) {
   state.effects = state.effects
     .map((effect) => ({ ...effect, life: effect.life - dt }))
@@ -666,6 +700,7 @@ function gameLoop(timestamp) {
   checkGameOver();
   updateHud();
   drawBoard();
+  syncAllySprites();
   requestAnimationFrame(gameLoop);
 }
 
