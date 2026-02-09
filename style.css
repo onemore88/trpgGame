@@ -92,10 +92,12 @@ body {
 
 .ally-sprite {
   position: absolute;
-  width: 48px;
-  height: auto;
+  width: 72px;
+  height: 72px;
   transform: translate(-50%, -85%);
   filter: drop-shadow(0 6px 8px rgba(2, 6, 23, 0.5));
+  background-repeat: no-repeat;
+  image-rendering: auto;
 }
 
 .panel {

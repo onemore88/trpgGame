@@ -69,8 +69,20 @@ const tierMultiplier = {
   10: 1.5,
 };
 
-const allySpriteUrl =
-  "https://www.fightersgeneration.com/characters4/yashiro-2k3stance.gif";
+const allySpriteUrl = "assets/ally-spritesheet.png";
+const spriteSheet = new Image();
+spriteSheet.src = allySpriteUrl;
+let spriteReady = false;
+spriteSheet.onload = () => {
+  spriteReady = true;
+};
+const spriteConfig = {
+  columns: 7,
+  rows: 3,
+  frames: 19,
+  fps: 10,
+  scale: 0.4,
+};
 let nextTowerId = 1;
 
 const state = {
@@ -90,6 +102,7 @@ const state = {
   bossSpawned: false,
   gameOver: false,
   victory: false,
+  spriteTime: 0,
 };
 
 const path = (() => {
@@ -210,11 +223,6 @@ function enemyPosition(progress) {
 function makeTower(x, y, tier) {
   const stats = tierStats[tier];
   const role = towerRoleForTier(tier);
-  const palette = {
-    knight: { armor: "#94a3b8", cape: "#2563eb", skin: "#f8c59b" },
-    archer: { armor: "#cbd5f5", cape: "#16a34a", skin: "#f0b989" },
-    mage: { armor: "#c7d2fe", cape: "#7c3aed", skin: "#f1c27d" },
-  }[role];
   return {
     id: nextTowerId++,
     x,
@@ -226,7 +234,6 @@ function makeTower(x, y, tier) {
     attackSpeed: stats.speed,
     cooldown: 0,
     role,
-    palette,
     spriteEl: null,
   };
 }
@@ -306,7 +313,13 @@ function drawBoard() {
 
   for (const tower of state.towers) {
     const isSelected = tower === state.selectedTower;
-    drawAlly(tower, isSelected);
+    if (isSelected) {
+      ctx.beginPath();
+      ctx.strokeStyle = "rgba(56, 189, 248, 0.65)";
+      ctx.lineWidth = 2;
+      ctx.roundRect(tower.x - 14, tower.y - 26, 28, 52, 10);
+      ctx.stroke();
+    }
   }
 
   if (state.selectedTower) {
@@ -353,69 +366,6 @@ function drawBoard() {
     ctx.arc(tower.x, tower.y, tower.range, 0, Math.PI * 2);
     ctx.stroke();
   }
-}
-
-function drawAlly(tower, isSelected) {
-  const { armor, cape, skin } = tower.palette;
-  const headRadius = 6;
-  const bodyWidth = 16;
-  const bodyHeight = 22;
-  const x = tower.x;
-  const y = tower.y;
-  ctx.save();
-  ctx.translate(x, y);
-
-  if (isSelected) {
-    ctx.beginPath();
-    ctx.strokeStyle = "rgba(56, 189, 248, 0.65)";
-    ctx.lineWidth = 2;
-    ctx.roundRect(-14, -26, 28, 52, 10);
-    ctx.stroke();
-  }
-
-  ctx.fillStyle = cape;
-  ctx.beginPath();
-  ctx.moveTo(-8, 4);
-  ctx.lineTo(-16, 20);
-  ctx.lineTo(-4, 20);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = armor;
-  ctx.fillRect(-bodyWidth / 2, 2, bodyWidth, bodyHeight);
-
-  ctx.fillStyle = skin;
-  ctx.beginPath();
-  ctx.arc(0, -4, headRadius, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = "#0f172a";
-  ctx.fillRect(-6, 8, 12, 4);
-
-  ctx.fillStyle = "#1e293b";
-  ctx.fillRect(-10, bodyHeight / 2, 6, 10);
-  ctx.fillRect(4, bodyHeight / 2, 6, 10);
-
-  if (tower.role === "knight") {
-    ctx.strokeStyle = "#cbd5f5";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(10, 4);
-    ctx.lineTo(18, 14);
-    ctx.stroke();
-  } else if (tower.role === "archer") {
-    ctx.strokeStyle = "#f59e0b";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(14, 6, 6, -Math.PI / 2, Math.PI / 2);
-    ctx.stroke();
-  } else {
-    ctx.fillStyle = "#a5b4fc";
-    ctx.beginPath();
-    ctx.arc(14, 6, 5, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.restore();
 }
 
 function drawEnemy(enemy, pos) {
@@ -646,13 +596,22 @@ function updateProjectiles(dt) {
 }
 
 function syncAllySprites() {
+  if (!spriteReady) {
+    return;
+  }
   const activeIds = new Set();
+  const frame =
+    Math.floor(state.spriteTime * spriteConfig.fps) % spriteConfig.frames;
+  const col = frame % spriteConfig.columns;
+  const row = Math.floor(frame / spriteConfig.columns);
+  const cellWidth = spriteSheet.width / spriteConfig.columns;
+  const cellHeight = spriteSheet.height / spriteConfig.rows;
+  const scaledWidth = cellWidth * spriteConfig.scale;
+  const scaledHeight = cellHeight * spriteConfig.scale;
   for (const tower of state.towers) {
     activeIds.add(String(tower.id));
     if (!tower.spriteEl) {
-      const sprite = document.createElement("img");
-      sprite.src = allySpriteUrl;
-      sprite.alt = "";
+      const sprite = document.createElement("div");
       sprite.className = "ally-sprite";
       sprite.dataset.towerId = String(tower.id);
       unitLayer.appendChild(sprite);
@@ -662,6 +621,17 @@ function syncAllySprites() {
     const yPercent = (tower.y / canvas.height) * 100;
     tower.spriteEl.style.left = `${xPercent}%`;
     tower.spriteEl.style.top = `${yPercent}%`;
+    tower.spriteEl.style.width = `${scaledWidth}px`;
+    tower.spriteEl.style.height = `${scaledHeight}px`;
+    tower.spriteEl.style.backgroundImage = `url(${allySpriteUrl})`;
+    tower.spriteEl.style.backgroundSize = `${
+      spriteSheet.width * spriteConfig.scale
+    }px ${spriteSheet.height * spriteConfig.scale}px`;
+    tower.spriteEl.style.backgroundPosition = `${-col * scaledWidth}px ${
+      -row * scaledHeight
+    }px`;
+    const hue = (tower.tier - 1) * 18;
+    tower.spriteEl.style.filter = `hue-rotate(${hue}deg) saturate(1.1) drop-shadow(0 6px 8px rgba(2, 6, 23, 0.5))`;
   }
 
   const sprites = unitLayer.querySelectorAll(".ally-sprite");
@@ -692,6 +662,7 @@ function gameLoop(timestamp) {
   state.lastTime = timestamp;
 
   updatePhase(dt);
+  state.spriteTime += dt;
   updateSpawns(dt);
   updateEnemies(dt);
   updateTowers(dt);
